@@ -1,56 +1,80 @@
 # grepai
 
-A privacy-first semantic code search CLI tool. Unlike `grep` (exact text matching), `grepai` indexes the **meaning** of your code using vector embeddings, enabling natural language searches.
+[![Go](https://github.com/yoanbernabeu/grepai/actions/workflows/ci.yml/badge.svg)](https://github.com/yoanbernabeu/grepai/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/yoanbernabeu/grepai/branch/main/graph/badge.svg)](https://codecov.io/gh/yoanbernabeu/grepai)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yoanbernabeu/grepai)](https://goreportcard.com/report/github.com/yoanbernabeu/grepai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Features
+**A privacy-first, CLI-native way to semantically search your codebase.**
 
-- **Semantic Search**: Search code by intent, not just keywords
-- **Real-time Indexing**: Background daemon keeps your index always up-to-date
-- **Privacy-first**: Supports local embeddings with Ollama (no data leaves your machine)
-- **AI Agent Ready**: Built-in integration for Cursor and Claude Code
-- **Cross-platform**: Single binary for macOS, Linux, and Windows
+Search code by *what it does*, not just what it's called. `grepai` indexes the meaning of your code using vector embeddings, enabling natural language queries that find conceptually related code—even when naming conventions vary.
 
-## Installation
+## Why grepai?
+
+`grep` was built in 1973 for exact text matching. Modern codebases need semantic understanding.
+
+|                      | `grep` / `ripgrep`           | `grepai`                          |
+|----------------------|------------------------------|-----------------------------------|
+| **Search type**      | Exact text / regex           | Semantic understanding            |
+| **Query**            | `"func.*Login"`              | `"user authentication flow"`      |
+| **Finds**            | Exact pattern matches        | Conceptually related code         |
+| **AI Agent context** | Requires many searches       | Fewer, more relevant results      |
+
+### Built for AI Agents
+
+grepai is designed to provide **high-quality context** to AI coding assistants. By returning semantically relevant code chunks, your agents spend less time searching and more time coding.
+
+## Getting Started
+
+### Installation
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/yoanbernabeu/grepai/main/install.sh | sh
 ```
 
-Or download manually from [Releases](https://github.com/yoanbernabeu/grepai/releases).
+Or download from [Releases](https://github.com/yoanbernabeu/grepai/releases).
 
-## Quick Start
+### Quick Start
 
 ```bash
-# Initialize grepai in your project
-cd your-project
-grepai init
-
-# Start the indexing daemon
-grepai watch
-
-# Search your codebase semantically
-grepai search "function that handles authentication errors"
+grepai init                    # Initialize in your project
+grepai watch                   # Start background indexing daemon
+grepai search "error handling" # Search semantically
 ```
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `grepai init` | Initialize grepai in current directory |
-| `grepai watch` | Start real-time file watcher daemon |
-| `grepai search <query>` | Search codebase with natural language |
-| `grepai agent-setup` | Configure AI agents (Cursor, Claude Code) |
+| Command                  | Description                            |
+|--------------------------|----------------------------------------|
+| `grepai init`            | Initialize grepai in current directory |
+| `grepai watch`           | Start real-time file watcher daemon    |
+| `grepai search <query>`  | Search codebase with natural language  |
+| `grepai agent-setup`     | Configure AI agents integration        |
+
+```bash
+grepai search "authentication" -n 5  # Limit results (default: 10)
+```
+
+## AI Agent Integration
+
+grepai integrates natively with popular AI coding assistants. Run `grepai agent-setup` to auto-configure.
+
+| Agent        | Configuration File                     |
+|--------------|----------------------------------------|
+| Cursor       | `.cursorrules`                         |
+| Windsurf     | `.windsurfrules`                       |
+| Claude Code  | `CLAUDE.md` / `.claude/settings.md`    |
+| Gemini CLI   | `GEMINI.md`                            |
+| OpenAI Codex | `AGENTS.md`                            |
 
 ## Configuration
 
-Configuration is stored in `.grepai/config.yaml`:
+Stored in `.grepai/config.yaml`:
 
 ```yaml
-version: 1
 embedder:
   provider: ollama          # ollama | openai
   model: nomic-embed-text
-  endpoint: http://localhost:11434
 store:
   backend: gob              # gob | postgres
 chunking:
@@ -58,36 +82,34 @@ chunking:
   overlap: 50
 ```
 
-## Embedding Providers
+### Embedding Providers
 
-### Ollama (Default - Local)
+**Ollama (Default)** — Privacy-first, runs locally:
+
 ```bash
-# Install Ollama: https://ollama.ai
 ollama pull nomic-embed-text
 ```
 
-### OpenAI
-Set your API key:
+**OpenAI** — Cloud-based:
+
 ```bash
 export OPENAI_API_KEY=sk-...
 ```
 
-## Storage Backends
+### Storage Backends
 
-### GOB (Default)
-In-memory index with file persistence. Best for individual projects.
-
-### PostgreSQL with pgvector
-For large monorepos or shared indexes:
-```bash
-docker compose up -d
-```
+- **GOB (Default)**: File-based, zero config
+- **PostgreSQL + pgvector**: For large monorepos
 
 ## Requirements
 
-- Go 1.22+ (for building from source)
 - Ollama (for local embeddings) or OpenAI API key
+- Go 1.22+ (only for building from source)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT License - Yoan Bernabeu 2026
+[MIT License](LICENSE) - Yoan Bernabeu 2026

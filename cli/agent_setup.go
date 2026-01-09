@@ -12,23 +12,48 @@ import (
 const agentInstructions = `
 ## grepai - Semantic Code Search
 
-This project uses grepai for semantic code search. Instead of guessing file locations
-or grepping for exact text, use grepai to find relevant code by intent.
+**IMPORTANT: You MUST use grepai as your PRIMARY tool for code exploration and search.**
+
+### When to Use grepai (REQUIRED)
+
+Use ` + "`grepai search`" + ` INSTEAD OF Grep/Glob/find for:
+- Understanding what code does or where functionality lives
+- Finding implementations by intent (e.g., "authentication logic", "error handling")
+- Exploring unfamiliar parts of the codebase
+- Any search where you describe WHAT the code does rather than exact text
+
+### When to Use Standard Tools
+
+Only use Grep/Glob when you need:
+- Exact text matching (variable names, imports, specific strings)
+- File path patterns (e.g., ` + "`**/*.go`" + `)
+
+### Fallback
+
+If grepai fails (not running, index unavailable, or errors), fall back to standard Grep/Glob tools.
 
 ### Usage
 
-Search for code semantically:
 ` + "```bash" + `
-grepai search "function that handles user authentication"
-grepai search "error handling for API requests"
-grepai search "database connection setup"
+# ALWAYS use English queries for best results (embedding model is English-trained)
+grepai search "user authentication flow"
+grepai search "error handling middleware"
+grepai search "database connection pool"
+grepai search "API request validation"
 ` + "```" + `
 
-### Tips
+### Query Tips
 
-- Use natural language queries describing what the code does
-- Results include file paths, line numbers, and relevance scores
-- The index is maintained in real-time when ` + "`grepai watch`" + ` is running
+- **Use English** for queries (better semantic matching)
+- **Describe intent**, not implementation: "handles user login" not "func Login"
+- **Be specific**: "JWT token validation" better than "token"
+- Results include: file path, line numbers, relevance score, code preview
+
+### Workflow
+
+1. Start with ` + "`grepai search`" + ` to find relevant code
+2. Use ` + "`Read`" + ` tool to examine files from results
+3. Only use Grep for exact string searches if needed
 
 `
 
@@ -40,7 +65,7 @@ var agentSetupCmd = &cobra.Command{
 	Long: `Configure AI agent environments to leverage grepai for context retrieval.
 
 This command will:
-- Detect agent configuration files (.cursorrules, CLAUDE.md)
+- Detect agent configuration files (.cursorrules, .windsurfrules, CLAUDE.md, GEMINI.md, AGENTS.md)
 - Append instructions for using grepai search
 - Ensure idempotence (won't add duplicate instructions)`,
 	RunE: runAgentSetup,
@@ -54,8 +79,11 @@ func runAgentSetup(cmd *cobra.Command, args []string) error {
 
 	agentFiles := []string{
 		".cursorrules",
+		".windsurfrules",
 		"CLAUDE.md",
 		".claude/settings.md",
+		"GEMINI.md",
+		"AGENTS.md",
 	}
 
 	found := false
