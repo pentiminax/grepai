@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-09
+
+### Added
+- **Search Boost**: Configurable score multipliers based on file paths
+  - Penalize tests, mocks, fixtures, generated files, and docs
+  - Boost source directories (`/src/`, `/lib/`, `/app/`)
+  - Language-agnostic patterns, enabled by default
+- **Hybrid Search**: Combine vector similarity with text matching
+  - Uses Reciprocal Rank Fusion (RRF) algorithm
+  - Configurable k parameter (default: 60)
+  - Optional, disabled by default
+- `GetAllChunks()` method to VectorStore interface for text search
+- Dedicated documentation pages for Search Boost and Hybrid Search
+- Feature cards on docs homepage
+
+### Changed
+- Searcher now accepts full SearchConfig instead of just BoostConfig
+
+## [0.2.0] - 2026-01-09
+
 ### Added
 - Initial release of grepai
 - `grepai init` command for project initialization
@@ -32,5 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial public release
 
-[Unreleased]: https://github.com/yoanbernabeu/grepai/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/yoanbernabeu/grepai/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yoanbernabeu/grepai/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/yoanbernabeu/grepai/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yoanbernabeu/grepai/releases/tag/v0.1.0
