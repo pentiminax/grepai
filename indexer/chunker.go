@@ -76,10 +76,7 @@ func (c *Chunker) Chunk(filePath string, content string) []ChunkInfo {
 
 		// Skip empty chunks
 		if strings.TrimSpace(chunkContent) == "" {
-			start = end - overlapLines
-			if start < 0 || start >= end {
-				start = end
-			}
+			start = end
 			continue
 		}
 
@@ -99,10 +96,11 @@ func (c *Chunker) Chunk(filePath string, content string) []ChunkInfo {
 		chunkIndex++
 
 		// Move to next chunk with overlap
-		start = end - overlapLines
-		if start <= chunks[len(chunks)-1].StartLine-1 {
-			start = end // Prevent infinite loop
+		nextStart := end - overlapLines
+		if nextStart <= start {
+			nextStart = end // Prevent infinite loop
 		}
+		start = nextStart
 	}
 
 	return chunks

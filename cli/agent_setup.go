@@ -93,12 +93,22 @@ func runAgentSetup(cmd *cobra.Command, args []string) error {
 		}
 
 		// Add newlines if needed
+		var writeErr error
 		if len(content) > 0 && content[len(content)-1] != '\n' {
-			f.WriteString("\n")
+			_, writeErr = f.WriteString("\n")
 		}
-		f.WriteString("\n")
-		f.WriteString(agentInstructions)
+		if writeErr == nil {
+			_, writeErr = f.WriteString("\n")
+		}
+		if writeErr == nil {
+			_, writeErr = f.WriteString(agentInstructions)
+		}
 		f.Close()
+
+		if writeErr != nil {
+			fmt.Printf("  Warning: failed to write to %s: %v\n", file, writeErr)
+			continue
+		}
 
 		fmt.Printf("  Added grepai instructions\n")
 		modified++
