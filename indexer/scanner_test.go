@@ -207,3 +207,106 @@ func TestHashFile(t *testing.T) {
 		t.Error("same file should produce same hash")
 	}
 }
+
+func TestIsMinifiedFile(t *testing.T) {
+	tests := []struct {
+		path     string
+		expected bool
+	}{
+		{"jquery.min.js", true},
+		{"styles.min.css", true},
+		{"app.bundle.js", true},
+		{"main.bundle.css", true},
+		{"JQUERY.MIN.JS", true},   // Case insensitive
+		{"App.Bundle.CSS", true},  // Case insensitive
+		{"app.js", false},
+		{"styles.css", false},
+		{"minified.js", false},   // "min" in name but not pattern
+		{"bundle.go", false},     // "bundle" in name but not pattern
+		{"src/lib/jquery.min.js", true}, // With path
+	}
+
+	for _, tt := range tests {
+		result := isMinifiedFile(tt.path)
+		if result != tt.expected {
+			t.Errorf("isMinifiedFile(%q) = %v, expected %v", tt.path, result, tt.expected)
+		}
+	}
+}
+
+func TestScanner_SkipsMinifiedFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create regular JS file
+	regularJS := filepath.Join(tmpDir, "app.js")
+	err := os.WriteFile(regularJS, []byte("console.log('regular');"), 0644)
+	if err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	// Create minified JS file
+	minifiedJS := filepath.Join(tmpDir, "app.min.js")
+	err = os.WriteFile(minifiedJS, []byte("console.log('minified');"), 0644)
+	if err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	// Create bundle JS file
+	bundleJS := filepath.Join(tmpDir, "app.bundle.js")
+	err = os.WriteFile(bundleJS, []byte("console.log('bundle');"), 0644)
+	if err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	ignoreMatcher, err := NewIgnoreMatcher(tmpDir, []string{})
+	if err != nil {
+		t.Fatalf("failed to create ignore matcher: %v", err)
+	}
+
+	scanner := NewScanner(tmpDir, ignoreMatcher)
+	files, skipped, err := scanner.Scan()
+	if err != nil {
+		t.Fatalf("scan failed: %v", err)
+	}
+
+	// Should only have the regular JS file
+	if len(files) != 1 {
+		t.Errorf("expected 1 file (regular js), got %d", len(files))
+	}
+
+	if len(files) > 0 && files[0].Path != "app.js" {
+		t.Errorf("expected 'app.js', got '%s'", files[0].Path)
+	}
+
+	// Should have 2 skipped files (minified)
+	if len(skipped) != 2 {
+		t.Errorf("expected 2 skipped files, got %d: %v", len(skipped), skipped)
+	}
+}
+
+func TestScanner_ScanFile_SkipsMinified(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create minified file
+	minifiedJS := filepath.Join(tmpDir, "jquery.min.js")
+	err := os.WriteFile(minifiedJS, []byte("minified content"), 0644)
+	if err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	ignoreMatcher, err := NewIgnoreMatcher(tmpDir, []string{})
+	if err != nil {
+		t.Fatalf("failed to create ignore matcher: %v", err)
+	}
+
+	scanner := NewScanner(tmpDir, ignoreMatcher)
+	fileInfo, err := scanner.ScanFile("jquery.min.js")
+	if err != nil {
+		t.Fatalf("scan file failed: %v", err)
+	}
+
+	// Should return nil for minified files
+	if fileInfo != nil {
+		t.Error("expected nil for minified file, got file info")
+	}
+}

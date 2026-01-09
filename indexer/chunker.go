@@ -10,6 +10,7 @@ import (
 const (
 	DefaultChunkSize    = 512
 	DefaultChunkOverlap = 50
+	CharsPerToken       = 4 // Approximation: 4 chars ≈ 1 token for code
 )
 
 type ChunkInfo struct {
@@ -44,66 +45,98 @@ func NewChunker(chunkSize, overlap int) *Chunker {
 }
 
 func (c *Chunker) Chunk(filePath string, content string) []ChunkInfo {
-	lines := strings.Split(content, "\n")
-	if len(lines) == 0 {
+	if len(content) == 0 {
 		return nil
 	}
+
+	// Use character-based chunking instead of line-based
+	// This handles minified files with very long lines
+	maxChars := c.chunkSize * CharsPerToken
+	overlapChars := c.overlap * CharsPerToken
 
 	var chunks []ChunkInfo
 	chunkIndex := 0
 
-	// Estimate tokens per line (rough approximation: 1 line ≈ 10 tokens on average)
-	// This is a simplification; a proper tokenizer would be more accurate
-	tokensPerLine := 10
-	linesPerChunk := c.chunkSize / tokensPerLine
-	if linesPerChunk < 1 {
-		linesPerChunk = 1
-	}
-	overlapLines := c.overlap / tokensPerLine
-	if overlapLines < 1 {
-		overlapLines = 1
-	}
+	// Build line index for position -> line number mapping
+	lineStarts := buildLineStarts(content)
 
-	for start := 0; start < len(lines); {
-		end := start + linesPerChunk
-		if end > len(lines) {
-			end = len(lines)
+	pos := 0
+	for pos < len(content) {
+		end := pos + maxChars
+		if end > len(content) {
+			end = len(content)
 		}
 
-		// Create chunk content
-		chunkLines := lines[start:end]
-		chunkContent := strings.Join(chunkLines, "\n")
+		// Try to break at a newline if possible (cleaner chunks)
+		if end < len(content) {
+			lastNewline := strings.LastIndex(content[pos:end], "\n")
+			if lastNewline > 0 {
+				end = pos + lastNewline + 1
+			}
+		}
+
+		chunkContent := content[pos:end]
 
 		// Skip empty chunks
 		if strings.TrimSpace(chunkContent) == "" {
-			start = end
+			pos = end
 			continue
 		}
 
+		// Calculate line numbers
+		startLine := getLineNumber(lineStarts, pos)
+		endLine := getLineNumber(lineStarts, end-1)
+
 		// Generate chunk ID
-		hash := sha256.Sum256([]byte(fmt.Sprintf("%s:%d:%d:%s", filePath, start, end, chunkContent)))
+		hash := sha256.Sum256([]byte(fmt.Sprintf("%s:%d:%d:%s", filePath, pos, end, chunkContent)))
 		chunkID := fmt.Sprintf("%s_%d", filePath, chunkIndex)
 
 		chunks = append(chunks, ChunkInfo{
 			ID:        chunkID,
 			FilePath:  filePath,
-			StartLine: start + 1, // 1-indexed
-			EndLine:   end,       // Inclusive, 1-indexed
+			StartLine: startLine,
+			EndLine:   endLine,
 			Content:   chunkContent,
-			Hash:      hex.EncodeToString(hash[:8]), // Short hash for efficiency
+			Hash:      hex.EncodeToString(hash[:8]),
 		})
 
 		chunkIndex++
 
 		// Move to next chunk with overlap
-		nextStart := end - overlapLines
-		if nextStart <= start {
-			nextStart = end // Prevent infinite loop
+		nextPos := end - overlapChars
+		if nextPos <= pos {
+			nextPos = end // Prevent infinite loop
 		}
-		start = nextStart
+		pos = nextPos
 	}
 
 	return chunks
+}
+
+// buildLineStarts returns a slice where lineStarts[i] is the byte offset of line i+1
+func buildLineStarts(content string) []int {
+	starts := []int{0} // Line 1 starts at position 0
+	for i, r := range content {
+		if r == '\n' && i+1 < len(content) {
+			starts = append(starts, i+1)
+		}
+	}
+	return starts
+}
+
+// getLineNumber returns the 1-indexed line number for a given byte position
+func getLineNumber(lineStarts []int, pos int) int {
+	// Binary search for the line
+	low, high := 0, len(lineStarts)-1
+	for low < high {
+		mid := (low + high + 1) / 2
+		if lineStarts[mid] <= pos {
+			low = mid
+		} else {
+			high = mid - 1
+		}
+	}
+	return low + 1 // 1-indexed
 }
 
 // ChunkWithContext adds surrounding context to improve embedding quality

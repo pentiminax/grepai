@@ -15,6 +15,25 @@ const (
 	maxFileSize = 1 * 1024 * 1024 // 1 MB
 )
 
+// MinifiedPatterns lists patterns for minified files to skip by default
+var MinifiedPatterns = []string{
+	".min.js",
+	".min.css",
+	".bundle.js",
+	".bundle.css",
+}
+
+// isMinifiedFile checks if a file is a minified file based on naming patterns
+func isMinifiedFile(path string) bool {
+	lowerPath := strings.ToLower(path)
+	for _, pattern := range MinifiedPatterns {
+		if strings.HasSuffix(lowerPath, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 // SupportedExtensions lists file extensions to index
 var SupportedExtensions = map[string]bool{
 	".go":     true,
@@ -128,6 +147,12 @@ func (s *Scanner) Scan() ([]FileInfo, []string, error) {
 			return nil
 		}
 
+		// Skip minified files
+		if isMinifiedFile(relPath) {
+			skipped = append(skipped, relPath+" (minified)")
+			return nil
+		}
+
 		info, err := d.Info()
 		if err != nil {
 			return nil
@@ -169,6 +194,11 @@ func (s *Scanner) Scan() ([]FileInfo, []string, error) {
 
 func (s *Scanner) ScanFile(relPath string) (*FileInfo, error) {
 	absPath := filepath.Join(s.root, relPath)
+
+	// Skip minified files
+	if isMinifiedFile(relPath) {
+		return nil, nil
+	}
 
 	info, err := os.Stat(absPath)
 	if err != nil {
