@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-01-11
+
+### Added
+
+- **Compact JSON Output**: New `--compact`/`-c` flag for `grepai search` command (#33)
+  - Outputs minimal JSON without `content` field for ~80% token savings
+  - Requires `--json` flag (returns error if used alone)
+  - Recommended format for AI agents: `grepai search "query" --json --compact`
+  - All agent setup templates updated to use `--json --compact` by default
+
 ## [0.9.0] - 2026-01-11
 
 ### Added
@@ -136,7 +146,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial public release
 
-[Unreleased]: https://github.com/yoanbernabeu/grepai/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/yoanbernabeu/grepai/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/yoanbernabeu/grepai/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/yoanbernabeu/grepai/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/yoanbernabeu/grepai/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/yoanbernabeu/grepai/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/yoanbernabeu/grepai/compare/v0.7.1...v0.7.2
